@@ -11,11 +11,8 @@ char data;
 int childpid;
 int parentpid;
 
-char pow2 (char n)
-{
-	if (n==0) return 1;
-	return 2*pow2(n-1);
-}
+
+
 void getChildSignalDie()
 {
 		printf("\n");
@@ -23,7 +20,10 @@ void getChildSignalDie()
 		exit(0);
 }
 
-
+void getAlarmSignal()
+{
+		exit(0);
+}
 
 void getParentSignal()
 {
@@ -66,33 +66,52 @@ if (childpid == 0)
 			perror("Opening file: ");
 			return -1;
 		}
-		sigset_t set;
+		sigset_t set,set0;
 		
 		sigemptyset(&set);
 		sigaddset(&set,SIGPIPE);
 		sigprocmask(SIG_BLOCK,&set,NULL);
 		
-		struct sigaction act;
+		sigemptyset(&set0);
+		sigaddset(&set0,SIGALRM);
+		sigprocmask(SIG_UNBLOCK,&set0,NULL);
+		
+		struct sigaction act,alrm;
+		
 		
 		memset(&act,0,sizeof(act));
 		act.sa_handler=getParentSignal;
 		sigaction(SIGPIPE,&act,NULL);
+		
+		memset(&alrm,0,sizeof(alrm));
+		alrm.sa_handler=getAlarmSignal;
+		sigaction(SIGALRM,&alrm,NULL);
+		
 		n=0;
 		readresult=fscanf(f,"%c",&data);
+		alarm(10);
 		while (readresult>0)
 		{
 			
 			connect=0;
 			
-			sigprocmask(SIG_UNBLOCK,&set,NULL);			
+			sigprocmask(SIG_UNBLOCK,&set,NULL);		
+			alarm(10);
 			while (!connect) {}
+			alarm(10);
+					
 			sigprocmask(SIG_BLOCK,&set,NULL);
-			
 			if (n<7) 
 			{
 				int a;
 				a=(data&(1<<n))>>n;
-				if (a==0) kill(parentpid, SIGUSR1); else kill(parentpid, SIGUSR2);
+				if (a==0) 
+				{
+					if (kill(parentpid, SIGUSR1)<0) exit(-1);
+				} else 
+				{
+					if (kill(parentpid, SIGUSR2)<0) exit(-1);
+				}
 //				printf("Send: %d\n",a);
 				fflush(stdout);
 				n++;
@@ -100,7 +119,13 @@ if (childpid == 0)
 			{
 				int a;
 				a=(data&(1<<n))>>n;
-				if (a==0) kill(parentpid, SIGUSR1); else kill(parentpid, SIGUSR2);
+				if (a==0) 
+				{
+					if (kill(parentpid, SIGUSR1)<0) exit(-1);
+				}	 else 
+				{
+					if (kill(parentpid, SIGUSR2)<0) exit(-1);
+				}
 //				printf("Send: %d\n",a);
 				fflush(stdout);
 				readresult=fscanf(f,"%c",&data);
