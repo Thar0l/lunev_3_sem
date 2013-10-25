@@ -18,9 +18,12 @@ char pow2 (char n)
 }
 void getChildSignalDie()
 {
+		printf("\n");
 		kill(childpid, SIGKILL);
 		exit(0);
 }
+
+
 
 void getParentSignal()
 {
@@ -81,20 +84,36 @@ if (childpid == 0)
 			
 			connect=0;
 			
-			sigprocmask(SIG_UNBLOCK,&set,NULL);
-			
+			sigprocmask(SIG_UNBLOCK,&set,NULL);			
 			while (!connect) {}
 			sigprocmask(SIG_BLOCK,&set,NULL);
-			if (n==8) readresult=fscanf(f,"%c",&data);
-			else
+			
+			if (n<7) 
 			{
-			o=data%2;
-			data=(data-o)/2; 
-			printf("%c",o);
-			n++;
+				int a;
+				a=(data&(1<<n))>>n;
+				if (a==0) kill(parentpid, SIGUSR1); else kill(parentpid, SIGUSR2);
+//				printf("Send: %d\n",a);
+				fflush(stdout);
+				n++;
+			} else
+			{
+				int a;
+				a=(data&(1<<n))>>n;
+				if (a==0) kill(parentpid, SIGUSR1); else kill(parentpid, SIGUSR2);
+//				printf("Send: %d\n",a);
+				fflush(stdout);
+				readresult=fscanf(f,"%c",&data);
+				n=0;
+				connect=1;
 			}
-			if (data=='0') kill(parentpid, SIGUSR1);
-			else kill(parentpid, SIGUSR2);
+			/*
+			if (data=='0') kill(parentpid, SIGUSR1); else
+			if (data=='1') kill(parentpid, SIGUSR2); else
+			{
+				exit(0);			
+			}
+			* */
 		}
 
 		exit(0);
@@ -103,8 +122,6 @@ if (childpid == 0)
 /* Code executed by parent */	
 {                    
 		connect=0;
-		int n=0;;
-		char o=0;
 		sigset_t set0,set1,setdie;
 		
 		sigemptyset(&set0);
@@ -137,29 +154,42 @@ if (childpid == 0)
 		sleep(1);
 		
 		kill(childpid, SIGPIPE);
-		
+		int n=0;
+		char outdata=0;
 		while (1)
 		{
+			sigprocmask(SIG_UNBLOCK,&set0,NULL);
+			sigprocmask(SIG_UNBLOCK,&set1,NULL);	
 			while (!connect) {};
+			connect=0;
 			sigprocmask(SIG_BLOCK,&set0,NULL);
 			sigprocmask(SIG_BLOCK,&set1,NULL);
 			
-			if (n<7) 
+			if (n<7)
 			{
-				o=o+data;
-				o=o*2;
+//				printf("Get: %d\n",data);
+				fflush(stdout);
+				outdata=outdata+(data<<n);
 				n++;
-			}else
-			{	
-				printf("%c",o);
-				o=0;
+			} else
+			{
+//				printf("Get_: %d\n",data);
+				fflush(stdout);
+				fflush(stdout);
+				outdata=outdata+(data<<n);
 				n=0;
+				printf("%c",outdata);
+				fflush(stdout);
+				outdata=0;
+				
+				//connect=1;
 			}
-			
-			//printf("%c",data);
+			/*
+			printf("%d",data);
+			fflush(stdout);
+			*/
 			kill(childpid, SIGPIPE);
-			sigprocmask(SIG_UNBLOCK,&set0,NULL);
-			sigprocmask(SIG_UNBLOCK,&set1,NULL);		
+	
 		}
 		
 wait(NULL);
