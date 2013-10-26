@@ -23,56 +23,90 @@
 #define BUFF_SIZE 1
 
 
-void P(int semid)
+
+void P (int semid)
 {
 	struct sembuf mybuf;
-	mybuf.sem_op = -1;
-	mybuf.sem_flg = SEM_UNDO;
-	mybuf.sem_num = 0;
-	semop(semid, &mybuf, 1);
+	mybuf . sem_op 	= -1;
+	mybuf . sem_flg = SEM_UNDO;
+	mybuf . sem_num = 0;
+	semop (semid, &mybuf, 1);
 }
 
-void V(int semid)
+void V (int semid)
 {
 	struct sembuf mybuf;
-	mybuf.sem_op = 1;
-	mybuf.sem_flg = SEM_UNDO;
-	mybuf.sem_num = 0;
-	semop(semid, &mybuf, 1);
+	mybuf . sem_op	 = 1;
+	mybuf . sem_flg	 = SEM_UNDO;
+	mybuf . sem_num  = 0;
+	semop (semid, &mybuf, 1);
 }
 
+int sem_get (char file[], int offset)
+{
+	int semid = semget (ftok (file, 0) + offset, 1, IPC_CREAT | 0664);
+	if (semid < 0)
+	{
+		perror ("semget: ");
+		exit (EXIT_FAILURE);
+	}
+	return semid;
+}
 
+int mem_get (char file[], int offset)
+{
+	int shmid;
+	if (shmid = shmget(ftok(file, 0) + offset, sizeof(char) * BUFF_SIZE, 0664 | IPC_CREAT | IPC_EXCL) < 0)
+    {
+		if (errno == EEXIST)
+		{ 
+			shmid = shmget (ftok (file, 0) + 3, sizeof(char) * BUFF_SIZE, 0);
+		}
+		else
+		{
+			perror ("shmget (exist): ");
+			exit (EXIT_FAILURE);
+		}
+		
+	}
+	else
+	{
+		perror ("shmget (create): ");
+		exit (EXIT_FAILURE);
+	}
+	return shmid;
+}
 
 int  main(int argc, char *argv[])
 {
 
+if (argc > 2) 
+{
+	fprintf(stderr, "Usage: %s <filename> <mode>\n", argv[0]);
+	exit(EXIT_FAILURE);
+}
   
 char prog_mode;
 int fileid,memid;
 char bufer;
-int mutex, full, empty;
+int sem_mutex, sem_full, sem_empty;
 int reader,writer,rexist,wexist;
 
-mutex=semget(ftok(argv[0],0), 1, IPC_CREAT|0664);
-full=semget(ftok(argv[0],0)+1, 1, IPC_CREAT|0664);
-empty=semget(ftok(argv[0],0)+2, 1, IPC_CREAT|0664);
-
-reader=semget(ftok(argv[0],0)+4, 1, IPC_CREAT|0664);
-writer=semget(ftok(argv[0],0)+5, 1, IPC_CREAT|0664);
-
-wexist=semget(ftok(argv[0],0)+6, 1, IPC_CREAT|0664);
-rexist=semget(ftok(argv[0],0)+7, 1, IPC_CREAT|0664);
+sem_mutex 	=	sem_get (argv[0], 1);
+sem_full	=	sem_get (argv[0], 2);
+sem_empty	=	sem_get (argv[0], 3);
+reader=sem_get(argv[0],4);
+writer=sem_get(argv[0],5);
+wexist=sem_get(argv[0],6);
+rexist=sem_get(argv[0],7);
 
 
 
 
 
 
-  if (argc > 2) 
-  {
-      fprintf(stderr, "Usage: %s <filename> <mode>\n", argv[0]);
-      exit(EXIT_FAILURE);
-  }
+
+
   
   if (argc==1) 
   {
@@ -83,10 +117,10 @@ rexist=semget(ftok(argv[0],0)+7, 1, IPC_CREAT|0664);
       prog_mode=WRITER;
   } 
   
-    if (memid=shmget(ftok(argv[0],0)+3,sizeof(char)*BUFF_SIZE,0664|IPC_CREAT|IPC_EXCL)<0)
-    {
-		if (errno==EEXIST) memid=shmget(ftok(argv[0],0)+3,sizeof(char)*BUFF_SIZE,0);
-	}
+  
+  
+  memid=mem_get(argv[0],8);
+
 
 /* --------*/
 /* READER  */  
@@ -112,12 +146,12 @@ rexist=semget(ftok(argv[0],0)+7, 1, IPC_CREAT|0664);
 		if (semctl(wexist,0,GETVAL)<=0) exit(0);
 		P(writer);
 		if (semctl(wexist,0,GETVAL)<=0) exit(0);
-		P(full);
+		P(sem_full);
 		if (semctl(wexist,0,GETVAL)<=0) exit(0);
-		P(mutex);
+		P(sem_mutex);
 		bufer=mem[0];
-		V(mutex);
-		V(empty); 
+		V(sem_mutex);
+		V(sem_empty); 
 		printf("%c",bufer);
 		fflush(stdout);
 		if (semctl(wexist,0,GETVAL)<=0) exit(0);
@@ -143,9 +177,9 @@ rexist=semget(ftok(argv[0],0)+7, 1, IPC_CREAT|0664);
 	int fileid;
 	fileid = open("in.txt",O_RDONLY,0664);
 	
-	semctl(mutex,0,SETVAL,1);
-	semctl(empty,0,SETVAL,BUFF_SIZE);
-	semctl(full,0,SETVAL,0);
+	semctl(sem_mutex,0,SETVAL,1);
+	semctl(sem_empty,0,SETVAL,BUFF_SIZE);
+	semctl(sem_full,0,SETVAL,0);
 	//char str[10]="0123456789";
 
 	char *mem = (char *)shmat(memid, NULL, 0);
@@ -161,12 +195,12 @@ rexist=semget(ftok(argv[0],0)+7, 1, IPC_CREAT|0664);
 		V(writer);
 		bufer=str[i];
 		if (semctl(rexist,0,GETVAL)<=0) exit(0);
-		P(empty);
+		P(sem_empty);
 		if (semctl(rexist,0,GETVAL)<=0) exit(0);
-		P(mutex);
+		P(sem_mutex);
 		mem[0]=bufer;
-		V(mutex);
-		V(full); 
+		V(sem_mutex);
+		V(sem_full); 
 		if (semctl(rexist,0,GETVAL)<=0) exit(0);
 		P(reader);
 	}
