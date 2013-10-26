@@ -51,7 +51,7 @@ char prog_mode;
 int fileid,memid;
 char bufer;
 int mutex, full, empty;
-int reader,writer,exist;
+int reader,writer,rexist,wexist;
 
 mutex=semget(ftok(argv[0],0), 1, IPC_CREAT|0664);
 full=semget(ftok(argv[0],0)+1, 1, IPC_CREAT|0664);
@@ -60,8 +60,8 @@ empty=semget(ftok(argv[0],0)+2, 1, IPC_CREAT|0664);
 reader=semget(ftok(argv[0],0)+4, 1, IPC_CREAT|0664);
 writer=semget(ftok(argv[0],0)+5, 1, IPC_CREAT|0664);
 
-exist=semget(ftok(argv[0],0)+6, 1, IPC_CREAT|0664);
-
+wexist=semget(ftok(argv[0],0)+6, 1, IPC_CREAT|0664);
+rexist=semget(ftok(argv[0],0)+7, 1, IPC_CREAT|0664);
 
 
 
@@ -94,24 +94,33 @@ exist=semget(ftok(argv[0],0)+6, 1, IPC_CREAT|0664);
 
   if (prog_mode==READER)
   {
-	  char *mem = (char *)shmat(memid, NULL, 0);
 	  
+	  char *mem = (char *)shmat(memid, NULL, 0);
+	  semctl(wexist,0,SETVAL,0);
+	  V(rexist);
 	while(1)
 	{
 		
 		V(reader);
-		if (semctl(exist,0,GETVAL)<=0) exit(0);
+		int i;
+		for (i=0;i<10;i++)
+		{
+			if (semctl(wexist,0,GETVAL)<=0) sleep(1); else
+			break;
+		}
+		
+		if (semctl(wexist,0,GETVAL)<=0) exit(0);
 		P(writer);
-	//	if (semctl(exist,0,GETVAL)<=0) exit(0);
+		if (semctl(wexist,0,GETVAL)<=0) exit(0);
 		P(full);
-	//	if (semctl(exist,0,GETVAL)<=0) exit(0);
+		if (semctl(wexist,0,GETVAL)<=0) exit(0);
 		P(mutex);
 		bufer=mem[0];
 		V(mutex);
 		V(empty); 
 		printf("%c",bufer);
 		fflush(stdout);
-		if (semctl(exist,0,GETVAL)<=0) exit(0);
+		if (semctl(wexist,0,GETVAL)<=0) exit(0);
 		
 	}	
 	return 0;
@@ -123,28 +132,44 @@ exist=semget(ftok(argv[0],0)+6, 1, IPC_CREAT|0664);
   
   if (prog_mode==WRITER)
   { 
+	  
+	  	int i;
+		for (i=0;i<10;i++)
+		{
+			if (semctl(rexist,0,GETVAL)<=0) sleep(1); else
+			break;
+		}
+		if (semctl(rexist,0,GETVAL)<=0) exit(0);
+	int fileid;
+	fileid = open("in.txt",O_RDONLY,0664);
+	
 	semctl(mutex,0,SETVAL,1);
 	semctl(empty,0,SETVAL,BUFF_SIZE);
 	semctl(full,0,SETVAL,0);
-	char str[10]="0123456789";
-	int i;
+	//char str[10]="0123456789";
+
 	char *mem = (char *)shmat(memid, NULL, 0);
-	semctl(exist,0,SETVAL,0);
+	semctl(wexist,0,SETVAL,0);
 	struct sembuf mybuf;
-	
-	V(exist);
-	
-	
-	for (i=0; i<10; i++)
+	char str[BUFF_SIZE];
+	V(wexist);
+	int buff_size;
+	while (buff_size=read(fileid,&str,BUFF_SIZE)>0)
+	{
+	for (i=0; i<buff_size; i++)
 	{
 		V(writer);
 		bufer=str[i];
+		if (semctl(rexist,0,GETVAL)<=0) exit(0);
 		P(empty);
+		if (semctl(rexist,0,GETVAL)<=0) exit(0);
 		P(mutex);
-		mem[0]=str[i];
+		mem[0]=bufer;
 		V(mutex);
 		V(full); 
+		if (semctl(rexist,0,GETVAL)<=0) exit(0);
 		P(reader);
+	}
 	}
 	return 0;
   }
