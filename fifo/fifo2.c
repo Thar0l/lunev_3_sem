@@ -13,19 +13,23 @@
 
 #define WRITER 1
 #define READER 0
+#define NAME_LENGTH 5
 #define SYNC_FIFO "sync.fifo"
 #define BUFF_SIZE 32
 
-char *endname=".fifo";
+//char *endname=".fifo";
+
+
 
 int  main(int argc, char *argv[])
 {
 
   
 char prog_mode;
-int fifoid,syncfifoid,fileid;
-char *bufer;
-char filename[BUFF_SIZE];
+int fifoid, syncfifoid,fileid;
+int result;
+char buffer[BUFF_SIZE];
+char filename[NAME_LENGTH];
 
 /* --------*/
 /* GLOBAL  */  
@@ -58,43 +62,64 @@ char filename[BUFF_SIZE];
 
   if (prog_mode==READER)
   {
-  int res;
-    if (( syncfifoid=open(SYNC_FIFO, O_RDONLY))<0)
-    { 
-		perror("Opening sync fifo"); 
-		exit(EXIT_FAILURE); 
-    }
-    
-    if ((fileid = open(argv[1],O_WRONLY|O_CREAT,0664))<1)
-    {
-		perror("Opening file");
-		exit(EXIT_FAILURE); 
-    }
-        
-    
-    while (res=read(syncfifoid,&filename,BUFF_SIZE)<BUFF_SIZE) 
-    {
-	if (res<1)
+	  
+	if ((mkfifo(SYNC_FIFO, 0644 ) < 0 ) && ( errno != EEXIST ) )
 	{
-	    perror("Reading fifo");
-	    exit(EXIT_FAILURE);
+					
+		perror("Creating sync fifo: ");
+		exit(EXIT_FAILURE); 
 	}
-    }
-    close(syncfifoid);
-    strcat(filename,endname);
-    if (( fifoid=open(filename, O_RDONLY))<0)
+	
+    if (( syncfifoid=open(SYNC_FIFO, O_RDONLY)) < 0)
     { 
-		perror("Opening fifo"); 
+		perror("Opening sync fifo: "); 
 		exit(EXIT_FAILURE); 
     }
-
-    while (read(fifoid, &bufer, 1)>0) write(fileid, &bufer, 1); 
     
-    close(fifoid);
-    unlink(filename);
-    close(fileid);
-    exit(EXIT_SUCCESS);
-  }
+    if ((fileid = open(argv[1],O_WRONLY|O_CREAT,0664)) < 1)
+    {
+		perror("Opening file: ");
+		exit(EXIT_FAILURE); 
+    }
+    
+    while ( result = read ( syncfifoid, &filename, NAME_LENGTH ) < NAME_LENGTH) 
+	{
+		if ( result < 0 )
+		{
+			perror("Reading from sync fifo: ");
+			exit(EXIT_FAILURE); 
+		}
+	} 
+	close (syncfifoid);
+//	strcat(filename,endname);
+	
+	if ((fifoid = open( filename , O_WRONLY|O_NDELAY ) )> 0)
+	{
+			fprintf(stderr, "Opening fifo: alredy opened to write.\n");
+			exit(EXIT_FAILURE); 
+	}
+	
+	
+	
+	if ((fifoid = open( filename , O_RDONLY|O_NDELAY  ) )< 0)
+	{
+			perror("Opening fifo: ");
+			exit(EXIT_FAILURE); 
+	}
+	sleep (3);
+	
+	result = 1;
+	while (result  != 0)
+	{
+		result = read (fifoid, &buffer, BUFF_SIZE);
+		if (result > 0) write (fileid, &buffer, result);
+	}
+	
+	close(fileid);
+	close(fifoid);
+	unlink(filename);
+	exit(EXIT_SUCCESS);
+	}
   
 /* --------*/
 /* WRITER  */  
@@ -102,64 +127,83 @@ char filename[BUFF_SIZE];
   
   if (prog_mode==WRITER)
   { 
-    syncfifoid=mkfifo(SYNC_FIFO, 0664);
-    if((syncfifoid == -1)&&(errno!=EEXIST))
-    {
-		fprintf(stderr, "Can`t create sync fifo\n");
-		exit(EXIT_FAILURE);
-    }
-     
-    
-    if((syncfifoid=open(SYNC_FIFO, O_WRONLY))<0)
-    {
-		perror("Opening sync fifo"); 
+	if ((mkfifo(SYNC_FIFO, 0644 ) < 0 ) && ( errno != EEXIST ) )
+	{
+					
+		perror("Creating sync fifo: ");
+		exit(EXIT_FAILURE); 
+	}
+	
+    if (( syncfifoid=open(SYNC_FIFO, O_WRONLY)) < 0)
+    { 
+		perror("Opening sync fifo: "); 
 		exit(EXIT_FAILURE); 
     }
     
     int pid = getpid();
-    int n1=sprintf(filename, "%d", pid);
     
-    struct sysinfo info;
-    sysinfo(&info);
-    char *filename0;
-   
-    int n2=sprintf(filename0, "%ll", info.uptime);
-    n1=n1+n2;
-   
+    int n = sprintf(filename, "%d", pid);
+    
+    while (n < NAME_LENGTH) 
+    {
+		filename[n]='a';
+		n++;
+    }
+//	strcat(filename,endname);
+    
+    if ( ( mkfifo ( filename, 0644 ) < 0 ) && ( errno != EEXIST ) )
+	{
+					
+		perror("Creating fifo: ");
+		exit(EXIT_FAILURE); 
+	}
 	
-	strcat(filename,filename0);
-    for (;n1<BUFF_SIZE;n1++) filename[n1]='z';
-    strcat(filename,endname);
-       
-    fifoid=mkfifo(filename, 0664);
-    if((fifoid == -1)&&(errno!=EEXIST))
+	
+	sleep(1);
+	
+	if ((fileid = open(argv[1],O_RDONLY,0664)) < 1)
     {
-		fprintf(stderr, "Can`t create fifo\n");
-		exit(EXIT_FAILURE);
-    }
-    close(fifoid); 
-    
-    write(syncfifoid, &filename,BUFF_SIZE);
-    
-    if((fifoid=open(filename, O_WRONLY))<0)
-    {
-		perror("Opening fifo"); 
-		exit(EXIT_FAILURE); 
-    }
-  
-    if ((fileid = open(argv[1],O_RDONLY))<1)
-    {
-		perror("Opening file");
+		perror("Opening file: ");
 		exit(EXIT_FAILURE); 
     }
     
-    while (read(fileid,&bufer,1)>0) write(fifoid, &bufer,1);
-    
-    close(syncfifoid);
-    close(fifoid);
-    unlink(filename);
-    close(fileid);
-    exit(EXIT_SUCCESS);
+    if (write(syncfifoid, &filename, NAME_LENGTH) < NAME_LENGTH)
+    {
+		perror("Writing to sync fifo: ");
+		exit(EXIT_FAILURE); 
+	}
+	
+	close(syncfifoid);
+	
+	sleep (3);	
+	
+	if ((fifoid = open( filename, O_WRONLY  )) < 0)
+	{
+			perror("Opening fifo: ");
+			exit(EXIT_FAILURE); 
+	}
+	
+	
+	
+	
+	int flags = fcntl(fifoid, F_GETFL, 0);
+	flags &= ~O_NONBLOCK;
+	fcntl(fifoid, F_SETFL, flags);
+	
+	result = 1;
+	
+	while (result)
+	{
+		result = read (fileid, &buffer, BUFF_SIZE);
+		result = write(fifoid, &buffer, result);
+	}
+	
+	close(fileid);
+	while ( ( write ( fifoid, '\0', 1 ) ) && ( errno != EBADF ) )
+	close(fifoid);
+//	unlink(filename);
+	exit(EXIT_SUCCESS);
+	
   }
 
   
