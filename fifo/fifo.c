@@ -13,11 +13,11 @@
 
 #define WRITER 1
 #define READER 0
-#define NAME_LENGTH 5
+#define NAME_LENGTH 16
 #define SYNC_FIFO "sync.fifo"
-#define BUFF_SIZE 32
+#define BUFF_SIZE 1024
 
-//char *endname=".fifo";
+char endname[] = ".fifo";
 
 
 
@@ -81,9 +81,10 @@ char filename[NAME_LENGTH];
 		perror("Opening file: ");
 		exit(EXIT_FAILURE); 
     }
-    
-    while ( result = read ( syncfifoid, &filename, NAME_LENGTH ) < NAME_LENGTH) 
+    result = 0;
+    while ( result < NAME_LENGTH) 
 	{
+		result = read ( syncfifoid, &filename, NAME_LENGTH);
 		if ( result < 0 )
 		{
 			perror("Reading from sync fifo: ");
@@ -91,7 +92,6 @@ char filename[NAME_LENGTH];
 		}
 	} 
 	close (syncfifoid);
-//	strcat(filename,endname);
 	
 	if ((fifoid = open( filename , O_WRONLY|O_NDELAY ) )> 0)
 	{
@@ -106,6 +106,7 @@ char filename[NAME_LENGTH];
 			perror("Opening fifo: ");
 			exit(EXIT_FAILURE); 
 	}
+	
 	sleep (3);
 	
 	result = 1;
@@ -144,12 +145,12 @@ char filename[NAME_LENGTH];
     
     int n = sprintf(filename, "%d", pid);
     
-    while (n < NAME_LENGTH) 
+    while (n < NAME_LENGTH-5) 
     {
 		filename[n]='a';
 		n++;
     }
-//	strcat(filename,endname);
+	strcat(filename,endname);
     
     if ( ( mkfifo ( filename, 0644 ) < 0 ) && ( errno != EEXIST ) )
 	{
@@ -175,7 +176,7 @@ char filename[NAME_LENGTH];
 	
 	close(syncfifoid);
 	
-	sleep (3);	
+	sleep (1);	
 	
 	if ((fifoid = open( filename, O_WRONLY  )) < 0)
 	{
@@ -199,13 +200,13 @@ char filename[NAME_LENGTH];
 	}
 	
 	close(fileid);
-	while ( ( write ( fifoid, '\0', 1 ) ) && ( errno != EBADF ) )
+	while (( write ( fifoid, '\0', 1)) && ( errno != EBADF ) )
 	close(fifoid);
-//	unlink(filename);
+	unlink(filename);
 	exit(EXIT_SUCCESS);
 	
   }
 
   
-
+	exit(EXIT_SUCCESS);
 }
