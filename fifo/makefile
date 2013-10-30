@@ -9,3 +9,4 @@ debug: signal.c
 clean:	fifo
 	rm fifo
 	rm *.fifo
+	rm out.txt

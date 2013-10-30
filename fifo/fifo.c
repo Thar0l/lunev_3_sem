@@ -2,13 +2,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <signal.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/sysinfo.h>
 
 
 #define WRITER 1
