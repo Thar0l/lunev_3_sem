@@ -213,7 +213,7 @@ char filename[NAME_LENGTH];
 	while (result)
 	{
 		result = read (fileid, &buffer, BUFF_SIZE);
-		//sleep(1);
+		sleep(1);
 		result = write(fifoid, &buffer, result);
 	}
 	
