@@ -56,7 +56,7 @@ if (childpid == -1)
                         
                         connection=0;
                         
-                        file = fopen ("in.txt", "rb");
+                        file = fopen (argv[1], "rb");
                         if (!file)
                         {
                                 perror ("Opening file: ");
@@ -96,23 +96,24 @@ if (childpid == -1)
                         {
                                 
                                 connection=0;
-                                
-                                sigprocmask(SIG_UNBLOCK,&sigset_pipe,NULL);                
-                                
                                 alarm(10);
-                                if (!connection) 
-                                sigsuspend(&sigset_e);
-                                //sigwait(&sigset_pipe,&tmp);
+
+                                              
+//									sleep(1);
+
+									sigsuspend(&sigset_e);
+
+                                
                                 alarm(10);
                                 connection =0;                
-                                sigprocmask(SIG_BLOCK,&sigset_pipe,NULL);
+                                
                                 
                                 if (index < 7) 
                                 {
                                         int a;
                                         
                                         a = (bit & (1 << index)) >> index;
-                                        
+                       //                  printf ("%d", a);
                                         if (a == 0) 
                                         {
                                                 if (kill (parentpid, SIGUSR1)<0) exit(-1);
@@ -130,7 +131,7 @@ if (childpid == -1)
                                         int a;
                                         
                                         a = (bit & (1 << index)) >> index;
-                                        
+                     //                   printf ("%d", a);
                                         if (a == 0) 
                                         {
                                                 if (kill (parentpid, SIGUSR1)<0) exit(-1);
@@ -141,7 +142,8 @@ if (childpid == -1)
                                         }
 
                                         read_result = fscanf (file, "%c", &bit);
-                                        
+                           //             printf ("\n file: %d\n send: ", bit);
+
                                         index = 0;
                                         connection = 1;
                                 }
@@ -190,26 +192,30 @@ if (childpid == -1)
                         
                         while (1)
                         {
-                                sigprocmask (SIG_UNBLOCK, &sigset_usr, NULL);      
+//							sleep(1);
+    
                                 
-                                if (!connection) 
+
+									//sleep(1);
                                 //sigwait(&sigset_usr,&tmp);
-                                sigsuspend(&sigset_e);
+									sigsuspend(&sigset_e);
+
+                            
+
                                 
                                 connection = 0;
-                                
-                                sigprocmask(SIG_BLOCK, &sigset_usr, NULL);
-                                
                                 data = data + (bit << n);
-                                
+                      //          printf ("%d", bit);
                                 if (n < 7)
                                 {
                                         n++;
                                 } 
                                 else
                                 {
-                                        printf ("%c", data);
-                                        fflush (stdout);
+                                        //write(0,&data,sizeof(data));
+                         //               printf ("\n out: %d \n get:  ", data);
+										printf("%c",data);
+                                       // fflush (stdout);
                                         
                                         data = 0;
                                         n = 0;
@@ -225,7 +231,6 @@ return 0;
 
 void get_signal_die()
 {
-        printf("\n");
         kill(childpid, SIGKILL);
         exit(0);
 }
@@ -239,19 +244,19 @@ void get_signal_alarm()
 
 void get_signal_sync()
 {
-        connection = 1;
+        //connection = 1;
 }
 
 
 void get_signal_0()
 {
-        connection = 1;
+        //connection = 1;
         bit = 0;
 }
 
 
 void get_signal_1()
 {
-        connection = 1;
+        //connection = 1;
         bit = 1;
 }
