@@ -12,7 +12,7 @@ using namespace std;
 
 struct Child
 {
-	char *buffer;
+	unsigned char *buffer;
 	int size;
 	int count;
 	int end;
@@ -23,10 +23,10 @@ struct Child
 	{
 		this->count = 0;
 		this->end = 0;
-		this->size = 3000*n;
-		if (this->size >= BUFF_SIZE_LIMIT)
-			this->size = BUFF_SIZE_LIMIT -1;
-		this->buffer = new char[this->size];
+		this->size = 300*n;
+		if (this->size > BUFF_SIZE_LIMIT)
+			this->size = BUFF_SIZE_LIMIT;
+		this->buffer = new unsigned char[this->size];
 	}
 	
 	void execute(void)
@@ -40,19 +40,22 @@ struct Child
 			{
 				close(this->childfd[0]);
 				close(this->childfd[1]);
-				//cerr << "Child: Close fd"<<endl;
+				fprintf(stderr, "* Child     * died  *                       *\n");
+				fflush(stderr);
 				break;
 			}
-			//cerr << "Child: Read "<< rd_res << endl;
+			fprintf(stderr, "* Child     * read  * %5d bytes           *\n", rd_res);
+			fflush(stderr);
 			while (rd_res > 0)
 			{
 				wr_res = write(this->childfd[1], buffer, rd_res);
-				//cerr << "Child: Write " << wr_res << endl;
+				fprintf(stderr, "* Child     * write * %5d bytes           *\n", wr_res);
+				fflush(stderr);
 				for (int i= 0; i < (rd_res-wr_res); i++)
 				{
 					buffer[i]= buffer[i+wr_res];
 				}
-				rd_res = rd_res -wr_res;
+				rd_res = rd_res - wr_res;
 			}
 		}
 		return;
@@ -66,7 +69,6 @@ int main(int argc, char *argv[])
 	int child_count;
 	int pid;
 	int found;
-	int ready;
 	int index;
 	int result;
 	fd_set st_read, st_write;
@@ -85,6 +87,7 @@ int main(int argc, char *argv[])
 	if ((argc != 3)||(child_count == 0))
 	{
 		cerr<<"Usage: "<<argv[0]<<" <InputFileName> <ChildsCount> "<<endl;
+		fflush(stderr);
 		exit(EXIT_FAILURE);
 	}
 	
@@ -98,7 +101,7 @@ int main(int argc, char *argv[])
 		if (i != 0)
 		{
 			pipe(fd);
-			child[i-1].childfd[0] = fd[0];
+			child[i].childfd[0] = fd[0];
 			child[i-1].parentfd[1] = fd[1];
 			if (fd[1] > max_fd) 
 			{
@@ -159,7 +162,7 @@ int main(int argc, char *argv[])
 	FD_ZERO(&st_read);
 	FD_ZERO(&st_write);
 	FD_ZERO(&st_read_old);
-	FD_ZERO(&st_write_old);
+	//FD_ZERO(&st_write_old);
 	
 	for (int i= 0; i < child_count; i++)
 	{
@@ -171,7 +174,7 @@ int main(int argc, char *argv[])
 		st_write_old = st_write;
 		st_read_old = st_read;
 		
-		ready = select(max_fd, &st_read_old, &st_write_old, NULL, NULL);
+		select(max_fd, &st_read_old, &st_write_old, NULL, NULL);
 		
 		/** read */
 		found = 0;
@@ -189,7 +192,8 @@ int main(int argc, char *argv[])
 		if (found)
 		{
 			result = read(child[index].parentfd[0], child[index].buffer+child[index].count, child[index].size-child[index].count);
-			//cerr << "Parent: Read " << result << " from child ["<<index<<"]"<<endl;
+			fprintf(stderr, "* Parent    * read  * %5db from %2d child  *\n", result, index);
+			fflush(stderr);
 			
 			if (result == 0)
 			{
@@ -227,7 +231,7 @@ int main(int argc, char *argv[])
 		index = 0;
 		for (int i= 0; i < child_count; i++)
 		{
-			if (FD_ISSET(child[i].parentfd[1], &st_write))
+			if (FD_ISSET(child[i].parentfd[1], &st_write_old))
 			{
 				found = 1;
 				index = i;
@@ -238,7 +242,8 @@ int main(int argc, char *argv[])
 		if (found)
 		{
 			result = write(child[index].parentfd[1], child[index].buffer, child[index].count);
-			//cerr << "Parent Write "<<result<<" to child["<<index<<"]"<<endl;
+			fprintf(stderr, "* Parent    * write * %5db  to  %2d child  *\n", result, index);
+			fflush(stderr);
 			
 			if (result < child[index].count)
 			{
@@ -247,6 +252,7 @@ int main(int argc, char *argv[])
 					child[index].buffer[j]= child[index].buffer[j+result];
 				}
 				child[index].count-= result;
+				
 			}
 			else
 			{
@@ -272,9 +278,13 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+	fprintf(stderr, "* Parent    * wait  *                       *\n");
 	for (int i= 0; i < child_count; i++)
 	{
 		wait(NULL);
 	}
+	
+	fprintf(stderr, "* Parent    * died  *                       *\n");
+	fflush(stderr);
 	return 0;
 }
