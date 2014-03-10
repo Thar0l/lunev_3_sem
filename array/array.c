@@ -7,123 +7,142 @@
 
 #include "array.h"
 
-array arr_create(int size)
+struct array
 {
-	arr_error = ERR_NoError;
-    array temp;
+	int *items;
+	int size;
+};
 
+
+
+
+struct array *arr_create(int size)
+{
+	struct array *temp = NULL;
     if (size <= 0)
     {
-        arr_error = ERR_InvalidSize;
+    	errno = EINVAL;
         return NULL;
     }
-
     temp = malloc (sizeof(struct array));
-
     if (temp == NULL)
     {
-        arr_error = ERR_NoMemory;
+    	errno = ENOMEM;
         return NULL;
     }
-
-    temp->count = size;
+    temp->size = size;
     temp->items = calloc(size, sizeof(int));
-
     if (temp->items == NULL)
     {
     	free (temp);
-        arr_error = ERR_NoMemory;
+    	errno = ENOMEM;
         return NULL;
     }
-
+	errno = 0;
     return temp;
 }
 
-array arr_resize(array arr, int size)
-{
-	arr_error = ERR_NoError;
 
-	array temp = arr_create(size);
-	if (temp == NULL)
+void arr_delete(struct array *arr)
+{
+	//printf("\n!!!%x!!!\n",arr);
+	if (arr == NULL)
 	{
-			return NULL;
+    	errno = EBADR;
+        return;
 	}
-
-	int count = arr->count;
-	if (size < count) count = size;
-
-	int i;
-	for (i = 0; i < count; i++) temp->items[i] = arr->items[i];
-	arr_sort(temp,0);
-	arr = arr_delete(arr);
-	return temp;
-}
-
-array arr_delete(array arr)
-{
-	arr_error = ERR_NoError;
-    if (arr == NULL)
-    {
-        arr_error = ERR_ArrNotExist;
-        return NULL;
-    }
-
+	//printf("\n!!%x!!\n",arr->items);
     free(arr->items);
     free(arr);
-    return NULL;
+    //arr = NULL;
+	errno = 0;
+	return;
 }
 
-int arr_getitem(array arr, int index)
+
+int arr_resize(struct array *arr, int size)
 {
-	arr_error = ERR_NoError;
+	if (size <= 0)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+	int *temp = calloc(arr->size,sizeof(int));
+	if (temp == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
+	int min = arr->size;
+	if (size < min) min = size;
+	int i;
+	for (i = 0; i < min; i++) temp[i] = arr->items[i];
+    free(arr->items);
+    arr->size = size;
+    arr->items = calloc(size, sizeof(int));
+	if (arr->items == NULL)
+	{
+		return -1;
+	}
+	for (i = 0; i < min; i++) arr->items[i] = temp[i];
+    free(temp);
+    temp=NULL;
+	arr_sort(arr,0);
+	errno = 0;
+	return size;
+}
+
+int arr_getitem(struct array *arr, int index, int *value)
+{
+	*value = 0;
     if (arr == NULL)
     {
-    	arr_error = ERR_ArrNotExist;
+    	errno = EBADR;
     	return -1;
     }
     if (index < 0)
     {
-        arr_error = ERR_InvalidIndex;
+    	errno = EADDRNOTAVAIL;
         return -1;
     }
-    if (index >= (arr->count))
+    if (index >= (arr->size))
     {
-        arr_error = ERR_NoItem;
+    	errno = EADDRNOTAVAIL;
         return -1;
     }
-
-    return arr->items[index];
+    *value = arr->items[index];
+	errno = 0;
+    return index;
 }
 
-int arr_setitem(array arr, int index, int value)
+int arr_setitem(struct array *arr, int index, int value)
 {
-	arr_error = ERR_NoError;
     if (arr == NULL)
     {
-    	arr_error = ERR_ArrNotExist;
+    	errno = EBADR;
     	return -1;
     }
     if (index < 0)
     {
-        arr_error = ERR_InvalidIndex;
+    	errno = EADDRNOTAVAIL;
         return -1;
     }
-    if (index >= (arr->count))
+    if (index >= (arr->size))
     {
-        arr_error = ERR_NoItem;
+    	errno = EADDRNOTAVAIL;
         return -1;
     }
-
     arr->items[index] = value;
+	errno = 0;
     return arr_sort(arr, index);
 }
 
- int arr_sort(array arr, int index)
+ int arr_sort(struct array *arr, int index)
 {
 	int newindex = index;
 	int i,j;
-	for (i = 0; i < arr->count; i++)
-	for (j = i; j < arr->count; j++)
+	for (i = 0; i < arr->size; i++)
+	for (j = i; j < arr->size; j++)
 		if (arr->items[j] < arr->items[i])
 		{
 			int temp = arr->items[i];
@@ -137,19 +156,19 @@ int arr_setitem(array arr, int index, int value)
 	return newindex;
 }
 
-array arr_for_each (array arr, int (*foo) (int a, int index, int data), int a)
+int arr_for_each (struct array *arr, int (*foo) (int item, int index, void *data), void *data)
 {
-	arr_error = ERR_NoError;
     if (arr == NULL)
     {
-    	arr_error = ERR_ArrNotExist;
-    	return NULL;
+    	errno = EBADR;
+    	return -1;
     }
 
-    int i;
-    for (i=0; i < arr->count; i++)
+    int i=0;
+    for (i=0; i < arr->size; i++)
     	{
-    		arr->items[i] = (*foo) (a, i, arr->items[i]);
+    		arr->items[i] = (*foo) (arr->items[i], i, data);
     	}
-	return arr;
+	errno = 0;
+	return 0;
 }
