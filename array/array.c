@@ -13,7 +13,7 @@ struct array
 	int size;
 };
 
-
+int arr_sort(struct array *arr, int index);
 
 
 struct array *arr_create(int size)

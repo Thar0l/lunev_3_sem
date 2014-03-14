@@ -1,11 +1,14 @@
 CC = gcc
-CFLAGS = -Wall -fprofile-arcs -ftest-coverage -g
+CFLAGS = -Wall -fprofile-arcs -ftest-coverage -g -fstack-protector-all -Wstack-protector -fno-omit-frame-pointer
 AR = ar
 ARFLAGS = rcs
-all: test
+
+all: test libtest
 
 test: test.o array.o
 	$(CC) $(CFLAGS) test.o array.o -o test
+libtest: test.c libarray.a
+	$(CC) $(CFLAGS) -static test.c -L. -larray -o libtest
 libarray.a: array.o
 	$(AR) $(ARFLAGS) libarray.a array.o
 array.o: array.c array.h
@@ -16,3 +19,4 @@ test.o: test.c array.h
 clean:
 	rm *.o
 	rm test
+	rm libtest

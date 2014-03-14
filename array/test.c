@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
 	if ((argc > 1)&&(argv[1][0] == 'm'))
 	{
 	struct rlimit r;
-	r.rlim_cur=10000000;
-	r.rlim_max=100000000;
+	r.rlim_cur=1000000000;
+	r.rlim_max=5000000000;
 	setrlimit(RLIMIT_AS, &r);
 	}
 
@@ -86,8 +86,8 @@ int main(int argc, char *argv[])
     printf("\n\n\n");
 	if ((argc > 1)&&(argv[1][0] == 'm'))
 	{
-    if (arr_resize(arr,10000000)<0) printf("No memory\n");
-    if (arr_resize(arr,100000000)<0) printf("No memory\n");
+    if (arr_resize(arr,1000000000)<0) printf("No memory\n");
+    if (arr_resize(arr,1000000000)<0) printf("No memory\n");
 	}
     arr_delete(arr);
 
@@ -101,11 +101,11 @@ int main(int argc, char *argv[])
 
 	struct array **arr1 = NULL;
     arr = arr_create(1);
-    arr1 = malloc(10*sizeof(struct array *));
+    arr1 = malloc(100*sizeof(struct array *));
     if (arr1 != NULL)
     {
-    for (i=0; i<10; i++) arr1[i]=arr_create(1);
-    for (i=0; i<10; i++) arr_delete(arr1[i]);
+    for (i=0; i<100; i++) arr1[i]=arr_create(100000000);
+    for (i=0; i<100; i++) arr_delete(arr1[i]);
     free(arr1);
     }
     arr_delete(arr);
