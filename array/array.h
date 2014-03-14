@@ -20,6 +20,6 @@ void arr_delete(struct array *arr);
 int arr_resize(struct array *arr, int size);
 int arr_getitem(struct array *arr, int index, int *value);
 int arr_setitem(struct array *arr, int index, int value);
-int arr_for_each (struct array *arr, int (*foo) (int a, int index, void *data), void *data);
+int arr_for_each (struct array *arr, int (*foo) (int a, void *data), void *data);
 
 #endif /* ARRAY_H_ */

@@ -45,16 +45,13 @@ struct array *arr_create(int size)
 
 void arr_delete(struct array *arr)
 {
-	//printf("\n!!!%x!!!\n",arr);
 	if (arr == NULL)
 	{
     	errno = EBADR;
         return;
 	}
-	//printf("\n!!%x!!\n",arr->items);
     free(arr->items);
     free(arr);
-    //arr = NULL;
 	errno = 0;
 	return;
 }
@@ -67,7 +64,7 @@ int arr_resize(struct array *arr, int size)
 		errno = EINVAL;
 		return -1;
 	}
-	int *temp = calloc(arr->size,sizeof(int));
+	int *temp = calloc(size,sizeof(int));
 	if (temp == NULL)
 	{
 		errno = ENOMEM;
@@ -156,7 +153,7 @@ int arr_setitem(struct array *arr, int index, int value)
 	return newindex;
 }
 
-int arr_for_each (struct array *arr, int (*foo) (int item, int index, void *data), void *data)
+int arr_for_each (struct array *arr, int (*foo) (int item, void *data), void *data)
 {
     if (arr == NULL)
     {
@@ -164,10 +161,10 @@ int arr_for_each (struct array *arr, int (*foo) (int item, int index, void *data
     	return -1;
     }
 
-    int i=0;
-    for (i=0; i < arr->size; i++)
+    int i = 0;
+    for (i = 0; i < arr->size; i++)
     	{
-    		arr->items[i] = (*foo) (arr->items[i], i, data);
+    		arr->items[i] = (*foo) (arr->items[i], data);
     	}
 	errno = 0;
 	return 0;

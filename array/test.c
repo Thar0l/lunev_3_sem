@@ -12,12 +12,11 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-typedef struct array  *array;
 
 
-int print(int item, int index, void *data)
+int print(int item, void *data)
 {
-	printf("%d \t : \t %d\n",index,item);
+	printf("\t %d\n",item);
 	return item;
 }
 
@@ -27,9 +26,10 @@ int main(int argc, char *argv[])
 	{
 	struct rlimit r;
 	r.rlim_cur=10000000;
-	r.rlim_max=10000001;
+	r.rlim_max=100000000;
 	setrlimit(RLIMIT_AS, &r);
 	}
+
 	srand(time(NULL));
     struct array *arr = NULL;
     int i;
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
     arr = arr_create(-2);
     arr_setitem(arr,0,0);
     arr_getitem(arr,0,&i);
-    arr_for_each(arr,(*print),&i);
+    arr_for_each(arr,(*print), NULL);
     arr_delete(arr);
 
     arr = arr_create(0);
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     arr_getitem(arr,-1,&i);
     arr_getitem(arr,31,&i);
 
-    arr_for_each(arr,(*print),&i);
+    arr_for_each(arr,(*print), NULL);
     printf("\n\n\n");
 
     arr_delete(arr);
@@ -68,42 +68,46 @@ int main(int argc, char *argv[])
     arr_delete(arr);
 
     arr = arr_create(5);
-    arr_for_each(arr,(*print),&i);
+    arr_for_each(arr,(*print), NULL);
     printf("\n\n\n");
     for (i = 0; i < 5; i++)
     {
     	int x = rand()%100;
     	arr_setitem(arr,0,x);
     }
-    arr_for_each(arr,(*print),&i);
+    arr_for_each(arr,(*print), NULL);
     printf("\n\n\n");
     arr_resize(arr,10);
-    arr_for_each(arr,(*print),&i);
+    arr_for_each(arr,(*print), NULL);
     printf("\n\n\n");
     arr_resize(arr,-1);
     arr_resize(arr,6);
-    arr_for_each(arr,(*print),&i);
+    arr_for_each(arr,(*print), NULL);
     printf("\n\n\n");
 	if ((argc > 1)&&(argv[1][0] == 'm'))
 	{
-    if (arr_resize(arr,10000000)<0) printf("No mem\n");
-    if (arr_resize(arr,100000000)<0) printf("No mem\n");
+    if (arr_resize(arr,10000000)<0) printf("No memory\n");
+    if (arr_resize(arr,100000000)<0) printf("No memory\n");
 	}
     arr_delete(arr);
 
 	if ((argc > 1)&&(argv[1][0] == 'm'))
 	{
 	struct rlimit r;
-	r.rlim_cur=22;
-	r.rlim_max=2;
+	r.rlim_cur=25;
+	r.rlim_max=30;
 	setrlimit(RLIMIT_AS, &r);
 	}
 
 	struct array **arr1 = NULL;
     arr = arr_create(1);
     arr1 = malloc(10*sizeof(struct array *));
+    if (arr1 != NULL)
+    {
     for (i=0; i<10; i++) arr1[i]=arr_create(1);
+    for (i=0; i<10; i++) arr_delete(arr1[i]);
+    free(arr1);
+    }
     arr_delete(arr);
-    arr_delete(arr1);
     return 0;
 }
