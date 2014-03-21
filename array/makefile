@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -fprofile-arcs -ftest-coverage -g -fstack-protector-all -Wstack-protector -fno-omit-frame-pointer
+CFLAGS = -Wall -fprofile-arcs -ftest-coverage -g
 AR = ar
 ARFLAGS = rcs
 
