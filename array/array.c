@@ -9,17 +9,16 @@
 
 struct array
 {
-	int *items;
-	int size;
+	unsigned int *items;
+	unsigned int size;
 };
 
-int arr_sort(struct array *arr, int index);
 
 
-struct array *arr_create(int size)
+struct array *arr_create(unsigned int size)
 {
 	struct array *temp = NULL;
-    if (size <= 0)
+    if (size == 0)
     {
     	errno = EINVAL;
         return NULL;
@@ -31,7 +30,7 @@ struct array *arr_create(int size)
         return NULL;
     }
     temp->size = size;
-    temp->items = calloc(size, sizeof(int));
+    temp->items = calloc(size, sizeof(unsigned int));
     if (temp->items == NULL)
     {
     	free (temp);
@@ -57,50 +56,48 @@ void arr_delete(struct array *arr)
 }
 
 
-int arr_resize(struct array *arr, int size)
+int arr_resize(struct array *arr, unsigned int size)
 {
-	if (size <= 0)
+	if (size == 0)
 	{
 		errno = EINVAL;
 		return -1;
 	}
-	int *temp = calloc(size,sizeof(int));
+	int *temp = calloc(size,sizeof(unsigned int));
 	if (temp == NULL)
 	{
 		errno = ENOMEM;
 		return -1;
 	}
-	int min = arr->size;
-	if (size < min) min = size;
-	int i;
-	for (i = 0; i < min; i++) temp[i] = arr->items[i];
+	unsigned int min = arr->size;
+	if (size < min)
+		min = size;
+	unsigned int i;
+	for (i = 0; i < min; i++)
+		temp[i] = arr->items[arr->size-1-i];
     free(arr->items);
     arr->size = size;
-    arr->items = calloc(size, sizeof(int));
+    arr->items = calloc(size, sizeof(unsigned int));
 	if (arr->items == NULL)
 	{
 		return -1;
 	}
-	for (i = 0; i < min; i++) arr->items[i] = temp[i];
+	for (i = 0; i < min; i++)
+		arr_setitem(arr,0,temp[i]);
+
     free(temp);
-    temp=NULL;
-	arr_sort(arr,0);
+    temp = NULL;
 	errno = 0;
 	return size;
 }
 
-int arr_getitem(struct array *arr, int index, int *value)
+int arr_getitem(struct array *arr, unsigned int index, unsigned int *value)
 {
 	*value = 0;
     if (arr == NULL)
     {
     	errno = EBADR;
     	return -1;
-    }
-    if (index < 0)
-    {
-    	errno = EADDRNOTAVAIL;
-        return -1;
     }
     if (index >= (arr->size))
     {
@@ -112,48 +109,72 @@ int arr_getitem(struct array *arr, int index, int *value)
     return index;
 }
 
-int arr_setitem(struct array *arr, int index, int value)
+int arr_setitem(struct array *arr, unsigned int index, unsigned int value)
 {
     if (arr == NULL)
     {
     	errno = EBADR;
     	return -1;
-    }
-    if (index < 0)
-    {
-    	errno = EADDRNOTAVAIL;
-        return -1;
     }
     if (index >= (arr->size))
     {
     	errno = EADDRNOTAVAIL;
         return -1;
     }
-    arr->items[index] = value;
+
+    if (value == arr->items[index])
+    {
+    	errno = 0;
+        return index;
+    }
+
+    if (value < arr->items[index])
+    {
+    	unsigned int i = index;
+    	unsigned int newindex = 0;
+    	while (i >= 0)
+    	{
+    		if (((arr->items[i] > value) && (value >= arr->items [i-1]) && (1 != 0)) ||
+    				((arr->items[i] > value) && (i == 0)))
+    		{
+    			newindex = i;
+    			unsigned int j;
+    			for (j = index - 1; j >= i; j--)
+    				arr->items[j+1] = arr->items[j];
+    			break;
+    		}
+    		i--;
+    	}
+    	arr->items[newindex] = value;
+    }
+
+    if (value > arr->items[index])
+    {
+    	unsigned int i = index;
+    	unsigned int newindex = arr->size - 1;
+    	while (i < arr->size)
+    	{
+    		if (((arr->items[i+1] > value) && (value >= arr->items [i]) && (i != arr->size-1)) ||
+    				(((value >= arr->items [i])) && (i == arr->size-1)) )
+    		{
+    			newindex = i;
+    			unsigned int j;
+    			for (j = index + 1; j <= i; j++)
+    				arr->items[j-1] = arr->items[j];
+    			break;
+    		}
+    		i++;
+    	}
+    	arr->items[newindex] = value;
+    }
+
+
 	errno = 0;
-    return arr_sort(arr, index);
+    return 0;
 }
 
- int arr_sort(struct array *arr, int index)
-{
-	int newindex = index;
-	int i,j;
-	for (i = 0; i < arr->size; i++)
-	for (j = i; j < arr->size; j++)
-		if (arr->items[j] < arr->items[i])
-		{
-			int temp = arr->items[i];
-			arr->items[i] = arr->items[j];
-			arr->items[j] = temp;
-			if (i == newindex)
-				newindex = j;
-			if (j == newindex)
-				newindex = i;
-		}
-	return newindex;
-}
 
-int arr_for_each (struct array *arr, int (*foo) (int item, void *data), void *data)
+int arr_for_each (struct array *arr, unsigned int (*foo) (unsigned int item, void *data), void *data)
 {
     if (arr == NULL)
     {
@@ -161,7 +182,7 @@ int arr_for_each (struct array *arr, int (*foo) (int item, void *data), void *da
     	return -1;
     }
 
-    int i = 0;
+    unsigned int i = 0;
     for (i = 0; i < arr->size; i++)
     	{
     		arr->items[i] = (*foo) (arr->items[i], data);

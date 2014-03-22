@@ -14,7 +14,7 @@
 
 
 
-int print(int item, void *data)
+unsigned int print(unsigned int item, void *data)
 {
 	printf("\t %d\n",item);
 	return item;
@@ -22,6 +22,7 @@ int print(int item, void *data)
 
 int main(int argc, char *argv[])
 {
+
 	if ((argc > 1)&&(argv[1][0] == 'm'))
 	{
 	struct rlimit r;
@@ -32,7 +33,11 @@ int main(int argc, char *argv[])
 
 	srand(time(NULL));
     struct array *arr = NULL;
-    int i;
+    unsigned int i;
+
+
+
+
 
     arr = arr_create(-2);
     arr_setitem(arr,0,0);
@@ -46,8 +51,8 @@ int main(int argc, char *argv[])
     arr = arr_create(30);
     for (i = 0; i < 30; i++)
     {
-    	int x = rand()%100;
-    	arr_setitem(arr,0,x);
+    	unsigned int x = rand()%1000;
+    	arr_setitem(arr,15,x);
     }
 
     arr_setitem(arr,-1,0);
@@ -62,25 +67,29 @@ int main(int argc, char *argv[])
 
     arr_delete(arr);
 
-
-    arr = arr_create(10000000);
+	if ((argc > 1)&&(argv[1][0] == 'm'))
+	{
+    arr = arr_create(1000000000);
     printf("err: %d\n",errno);
     arr_delete(arr);
-
+	}
     arr = arr_create(5);
     arr_for_each(arr,(*print), NULL);
     printf("\n\n\n");
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < 6; i++)
     {
-    	int x = rand()%100;
-    	arr_setitem(arr,0,x);
+    	int x = rand()%1000;
+    	arr_setitem(arr,2,x);
     }
     arr_for_each(arr,(*print), NULL);
     printf("\n\n\n");
-    arr_resize(arr,10);
+    arr_resize(arr,12);
     arr_for_each(arr,(*print), NULL);
     printf("\n\n\n");
-    arr_resize(arr,-1);
+    arr_resize(arr,3);
+    arr_for_each(arr,(*print), NULL);
+    printf("\n\n\n");
+//    arr_resize(arr,-1);
     arr_resize(arr,6);
     arr_for_each(arr,(*print), NULL);
     printf("\n\n\n");
@@ -98,7 +107,8 @@ int main(int argc, char *argv[])
 	r.rlim_max=30;
 	setrlimit(RLIMIT_AS, &r);
 	}
-
+	if ((argc > 1)&&(argv[1][0] == 'm'))
+	{
 	struct array **arr1 = NULL;
     arr = arr_create(1);
     arr1 = malloc(100*sizeof(struct array *));
@@ -109,5 +119,6 @@ int main(int argc, char *argv[])
     free(arr1);
     }
     arr_delete(arr);
+	}
     return 0;
 }
