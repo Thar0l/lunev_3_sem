@@ -80,6 +80,7 @@ int arr_resize(struct array *arr, unsigned int size)
     arr->items = calloc(size, sizeof(unsigned int));
 	if (arr->items == NULL)
 	{
+		errno = ENOMEM;
 		return -1;
 	}
 	for (i = 0; i < min; i++)
@@ -134,13 +135,22 @@ int arr_setitem(struct array *arr, unsigned int index, unsigned int value)
     	unsigned int newindex = 0;
     	while (i >= 0)
     	{
-    		if (((arr->items[i] > value) && (value >= arr->items [i-1]) && (1 != 0)) ||
-    				((arr->items[i] > value) && (i == 0)))
+    		int found = 0;
+    		if (i != 0)
+    		{
+    			if ((arr->items[i] >= value) && (value >= arr->items [i-1])){
+    				found = 1; }
+    		} else
+    		{
+    			if (arr->items[i] >= value)
+    				found = 1;
+    		}
+    		if (found)
     		{
     			newindex = i;
     			unsigned int j;
-    			for (j = index - 1; j >= i; j--)
-    				arr->items[j+1] = arr->items[j];
+    				for (j = index-1; j > i; j--)
+    					arr->items[j+1] = arr->items[j];
     			break;
     		}
     		i--;
@@ -154,13 +164,22 @@ int arr_setitem(struct array *arr, unsigned int index, unsigned int value)
     	unsigned int newindex = arr->size - 1;
     	while (i < arr->size)
     	{
-    		if (((arr->items[i+1] > value) && (value >= arr->items [i]) && (i != arr->size-1)) ||
-    				(((value >= arr->items [i])) && (i == arr->size-1)) )
+    		int found = 0;
+    		if (i != arr->size-1)
+    		{
+    			if ((arr->items[i+1] > value) && (value >= arr->items [i]))
+    				found = 1;
+    		} else
+    		{
+    			if (value >= arr->items [i])
+    				found = 1;
+    		}
+    		if (found)
     		{
     			newindex = i;
     			unsigned int j;
-    			for (j = index + 1; j <= i; j++)
-    				arr->items[j-1] = arr->items[j];
+    				for (j = index + 1; j <= i; j++)
+    					arr->items[j-1] = arr->items[j];
     			break;
     		}
     		i++;

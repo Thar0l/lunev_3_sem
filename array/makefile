@@ -17,6 +17,4 @@ test.o: test.c array.h
 	$(CC) $(CFLAGS) -c test.c
 
 clean:
-	rm *.o
-	rm test
-	rm libtest
+	rm *.o *.gcda *.gcno *.a test libtest
