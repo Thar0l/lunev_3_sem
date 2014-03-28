@@ -24,12 +24,13 @@ const unsigned int MAXELEM=1000;
 unsigned int print(unsigned int item, void *data)
 {
 	printf("\t %d\n",item);
-	return item;
+	return 0;
 }
 
 unsigned int sqr(unsigned int item, void *data)
 {
-	return item*item;
+	item = item*item;
+	return 0;
 }
 
 int main(int argc, char *argv[])

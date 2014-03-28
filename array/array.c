@@ -74,20 +74,10 @@ int arr_resize(struct array *arr, unsigned int size)
 		min = size;
 	unsigned int i;
 	for (i = 0; i < min; i++)
-		temp[i] = arr->items[arr->size-1-i];
+		temp[size-i-1] = arr->items[arr->size-1-i];
     free(arr->items);
     arr->size = size;
-    arr->items = calloc(size, sizeof(unsigned int));
-	if (arr->items == NULL)
-	{
-		errno = ENOMEM;
-		return -1;
-	}
-	for (i = 0; i < min; i++)
-		arr_setitem(arr,0,temp[i]);
-
-    free(temp);
-    temp = NULL;
+    arr->items = (unsigned int *)temp;
 	errno = 0;
 	return size;
 }
@@ -157,8 +147,7 @@ int arr_setitem(struct array *arr, unsigned int index, unsigned int value)
     	}
     	arr->items[newindex] = value;
     }
-
-    if (value > arr->items[index])
+    else
     {
     	unsigned int i = index;
     	unsigned int newindex = arr->size - 1;
@@ -167,7 +156,7 @@ int arr_setitem(struct array *arr, unsigned int index, unsigned int value)
     		int found = 0;
     		if (i != arr->size-1)
     		{
-    			if ((arr->items[i+1] > value) && (value >= arr->items [i]))
+    			if ((arr->items[i+1] >= value) && (value >= arr->items [i]))
     				found = 1;
     		} else
     		{
@@ -186,11 +175,10 @@ int arr_setitem(struct array *arr, unsigned int index, unsigned int value)
     	}
     	arr->items[newindex] = value;
     }
-
-
 	errno = 0;
     return 0;
 }
+
 
 
 int arr_for_each (struct array *arr, unsigned int (*foo) (unsigned int item, void *data), void *data)
@@ -200,11 +188,10 @@ int arr_for_each (struct array *arr, unsigned int (*foo) (unsigned int item, voi
     	errno = EBADR;
     	return -1;
     }
-
     unsigned int i = 0;
     for (i = 0; i < arr->size; i++)
     	{
-    		arr->items[i] = (*foo) (arr->items[i], data);
+    		(*foo) (arr->items[i], data);
     	}
 	errno = 0;
 	return 0;
