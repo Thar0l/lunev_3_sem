@@ -13,27 +13,27 @@ public class Message implements Serializable{
 	private Matrix matrix;
 	private double result;
 	private String text;
-	private int type;
+	private String type;
 	
 	public Message(Matrix matrix) {
 		this.matrix = matrix;
 		this.result = 0;
 		this.text = null;
-		this.type = 1;
+		this.type = "Matrix";
 	}
 	
 	public Message(double result) {
 		this.matrix = null;
 		this.result = result;
 		this.text = null;
-		this.type = 2;
+		this.type = "Double";
 	}
 	
 	public Message(String text) {
 		this.matrix = null;
 		this.result = 0;
 		this.text = text;
-		this.type = 3;
+		this.type = "String";
 	}
 	
 	public String getText() {
@@ -48,7 +48,7 @@ public class Message implements Serializable{
 		return this.matrix;
 	}
 	
-	public int getType() {
+	public String getType() {
 		return this.type;
 	}
 }

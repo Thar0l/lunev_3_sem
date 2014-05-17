@@ -2,46 +2,34 @@ package calc;
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
+import Jama.*;
+
 
 public class Client {
-	public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
-		MulticastSocket multicastsocket = new MulticastSocket(4446);
-		String groupIP = "224.224.224.224";
-		InetAddress group = InetAddress.getByName(groupIP);
-		multicastsocket.joinGroup(group);
 
-		DatagramPacket packet;
-		byte[] buf = new byte[256];
-		packet = new DatagramPacket(buf, buf.length);
-		String receivedaddress = "0";
-		Boolean connected = false;
+	public static void main(String[] args) throws IOException, InterruptedException {
+			
 		
-		System.out.println("Waiting for broadcast...");
-	    while (!connected) {
-	    	multicastsocket.receive(packet);
-	    	receivedaddress = new String(packet.getData());
-		    System.out.println("Broadcast received from group : " + groupIP+ "; ServerIP =  " + receivedaddress);
-		    connected = true;
+		Matrix matrix = Matrix.random(300, 300);
+		
+		BroadcastThread broadcastthread = new BroadcastThread("224.224.224.224", 4446);
+		ServerSocket socketListener = new ServerSocket (1234);
+		socketListener.setSoTimeout(3000);
+		ServerConnectThread.connected = false;
+		ServerConnectThread.clientscount = 0;
+		ServerConnectThread.Clients = new ArrayList<ServerThread>();
+		ServerConnectThread cct = new ServerConnectThread(socketListener, matrix);
+		cct.start();
+		System.out.println("Broadcasting to servers...");
+		broadcastthread.run();
+		broadcastthread.join();
+		System.out.println("Broadcast sended");
+		System.out.println("Accepting server`s connections...");	
+	    for (ServerThread thread: ServerConnectThread.Clients) {
+	    	thread.join();
 	    }
-	    multicastsocket.leaveGroup(group);
-	    multicastsocket.close();
-	    Thread.sleep(10000);
-	    
-	    System.out.println("Connecting to server...");
-	    InetAddress serverAddress = InetAddress.getByName(receivedaddress);
-	    Socket tcpsocket = new Socket(serverAddress, 1234);
-	    System.out.println("Connected.");
-	    
-	    ObjectInputStream inputStream   = new ObjectInputStream(tcpsocket.getInputStream());
-	    ObjectOutputStream outputStream = new ObjectOutputStream(tcpsocket.getOutputStream());
-	    Thread.sleep(2000);
-	    System.out.println("Sending data ...");
-	    Message testmsg = new Message("test");
-	    
-	    outputStream.writeObject(testmsg);
-	    testmsg = (Message) inputStream.readObject();
-	    System.out.println("Data: "+testmsg.getText());
+		
+	} 
 
-	    tcpsocket.close();
-	}
 }
