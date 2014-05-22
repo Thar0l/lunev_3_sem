@@ -11,27 +11,39 @@ public class Message implements Serializable{
 
 	private static final long serialVersionUID = 8506899078391430169L;
 	private Matrix matrix;
+	private int startminorindex;
+	private int endminorindex;
+	private int size;
 	private double result;
 	private String text;
 	private String type;
 	
-	public Message(Matrix matrix) {
+	public Message(Matrix matrix, int startminorindex, int endminorindex, int size) {
 		this.matrix = matrix;
+		this.startminorindex = startminorindex;
+		this.endminorindex = endminorindex;
+		this.size = size;
 		this.result = 0;
-		this.text = null;
+		this.text = "-";
 		this.type = "Matrix";
 	}
 	
 	public Message(double result) {
 		this.matrix = null;
 		this.result = result;
-		this.text = null;
+		this.startminorindex = 0;
+		this.endminorindex = 0;
+		this.size = 0;
+		this.text = "-";
 		this.type = "Double";
 	}
 	
 	public Message(String text) {
 		this.matrix = null;
 		this.result = 0;
+		this.startminorindex = 0;
+		this.endminorindex = 0;
+		this.size = 0;
 		this.text = text;
 		this.type = "String";
 	}
@@ -51,4 +63,17 @@ public class Message implements Serializable{
 	public String getType() {
 		return this.type;
 	}
+	
+	public int getStartMinorIndex() {
+		return this.startminorindex;
+	}
+	
+	public int getEndMinorIndex() {
+		return this.endminorindex;
+	}
+	
+	public int getMatrixSize() {
+		return this.size;
+	}
+	
 }
