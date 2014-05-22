@@ -18,32 +18,33 @@ public class Message implements Serializable{
 	private String text;
 	private String type;
 	
+	public Message() {
+		this.matrix = null;
+		this.startminorindex = 0;
+		this.endminorindex = 0;
+		this.size = 0;
+		this.result = 0;
+		this.text = "-";
+		this.type = "null";
+	}
+	
 	public Message(Matrix matrix, int startminorindex, int endminorindex, int size) {
+		this();
 		this.matrix = matrix;
 		this.startminorindex = startminorindex;
 		this.endminorindex = endminorindex;
 		this.size = size;
-		this.result = 0;
-		this.text = "-";
 		this.type = "Matrix";
 	}
 	
 	public Message(double result) {
-		this.matrix = null;
+		this();
 		this.result = result;
-		this.startminorindex = 0;
-		this.endminorindex = 0;
-		this.size = 0;
-		this.text = "-";
 		this.type = "Double";
 	}
 	
 	public Message(String text) {
-		this.matrix = null;
-		this.result = 0;
-		this.startminorindex = 0;
-		this.endminorindex = 0;
-		this.size = 0;
+		this();
 		this.text = text;
 		this.type = "String";
 	}

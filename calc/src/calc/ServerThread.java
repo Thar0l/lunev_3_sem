@@ -30,42 +30,39 @@ public class ServerThread extends Thread {
 	}
 	
 
-	
 	public synchronized void run() {
 		try {
-			System.out.println("Server thread [" + number + "] run!");
+			System.out.println("Server thread for task {" + number + "} started.");
+			
 			ObjectOutputStream outputStream = new ObjectOutputStream(tcpsocket.getOutputStream());
 			ObjectInputStream inputStream   = new ObjectInputStream(tcpsocket.getInputStream());
-		    
-			
-			
-			
-			
+		    			
 		    Message msg = new Message(Task.getMatrix(), Task.Parts.get(number).getStartIndex(), Task.Parts.get(number).getEndIndex(), Task.getMatrixSize());
-		    //Message msg1 = new Message("Exit0");
 		    outputStream.writeObject(msg);
 		    msg = (Message) inputStream.readObject();
-		   // outputStream.writeObject(msg1);
-		    System.out.println("Server "+number+" calculated: "+msg.getResult());
 		    Task.Parts.get(number).setResult(msg.getResult());
 		    Task.Parts.get(number).setDone();
 		    
-		   // ServerConnectThread.clientscount--;
-		    
+		    System.out.println("Server calculated task (" + number + "). Result = : "+msg.getResult());
+		    if ( Task.Parts.get(number).isDone() )
+		    	System.out.println("Task {" + number + "} is done.");
+		    else
+		    	System.out.println("Task {" + number + "} isn`t done.");
+		    		    	
+		} catch (SocketException e) {
+				Task.Parts.get(number).setWorking(false);
+				System.err.println("Server doing task {" + number + "} disconnected!");
 		} catch (EOFException e) {
-			// ServerConnectThread.clientscount--;
-			 System.err.println("Server doing task [" + number + "] died!");
-			 Task.Parts.get(number).setWorking(false);
+			System.err.println("Server doing task {" + number + "} disconnected!");
+			Task.Parts.get(number).setWorking(false);
 		} catch (IOException e) {
-			//ServerConnectThread.clientscount--;
 			if (e.getMessage().equals("Connection reset")) {
 				Task.Parts.get(number).setWorking(false);
-				System.err.println("Server doing task [" + number + "] died!");
+				System.err.println("Server doing task {" + number + "} disconnected!");
 			} else {
 			e.printStackTrace();
 			}
 		} catch (ClassNotFoundException e) {
-			//ServerConnectThread.clientscount--;
 			e.printStackTrace();
 		}
 	}

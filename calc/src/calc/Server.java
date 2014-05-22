@@ -6,7 +6,7 @@ import java.net.*;
 import Jama.Matrix;
 
 public class Server {
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		while (true)
 		try {
 					
@@ -23,7 +23,7 @@ public class Server {
 				Boolean connected = false;
 		
 				System.out.println("Waiting for clients...");
-			    while (!connected) {
+			    while ( !connected ) {
 			    	multicastsocket.receive(packet);
 				    System.out.println("Multicast received from group : " + groupIP+ "; ClientIP =  " + packet.getAddress());
 				    connected = true;
@@ -47,40 +47,34 @@ public class Server {
 			    int startindex = msg.getStartMinorIndex();
 			    int endindex = msg.getEndMinorIndex();
 			    int size = msg.getMatrixSize();
-			    System.out.println("Calculating minors from "+ startindex+" to "+endindex);
+			    System.out.println("Calculating minors  [" + startindex + " - " + endindex + "] ...");
 			  
 			    double result = 0.0;
-		
-			    /*********************************************/
-			    
-				for (int i = startindex; i <= endindex; i++)
-				{
-					int arr[] = new int[size-1];
-					for (int k = 1; k < size; k++) 
-						arr[k-1] = k;
-					if (i > 0) arr[i-1] = 0;
-					
-					Matrix minor = matrix.getMatrix(0, size-2, arr);
-					
-					if (i%2 == 0)
-						result += minor.det();
-					else
-						result -= minor.det();
+			    int threads_count = 2;
+			    Calculator []threads = new Calculator[threads_count];
+				int start = startindex;
+				int count = (int) Math.ceil((double)(endindex-startindex)/(double)(threads_count));
+				int end = startindex+count-1;
+				
+				for (int i = 0; i < threads_count; i++) {
+					System.out.println("Thread "+i+" ~ ["+start+" - "+end+"]");
+					threads[i] = new Calculator(matrix, size, start, end, i);
+					threads[i].start();
+					start += count;
+					end += count;
+					if ( (end > endindex) || (i == threads_count - 1) )
+						end = endindex ;
 				}
-			    
-			    /************************************************/
-			    
+				
+				for (Calculator thread: threads) {
+					thread.join();
+					result += thread.getResult();
+				}
+
 			    System.out.println("Sending data ...");
-			    
 			    msg =new Message(result);
 			    outputStream.writeObject(msg);
-			   /* msg = (Message) inputStream.readObject();
-			    
-			    while ( ! msg.getText().equals("Exit")) {
-			    	msg = (Message) inputStream.readObject();
-			    }*/
 			    tcpsocket.close();
-			    
 			}
 			
 	
@@ -92,12 +86,17 @@ public class Server {
 			} catch (IOException e) {
 				if (e.getClass().getSimpleName().equals("EOFException")) {
 					System.err.println("Connection to client lost.");
-					
+					System.err.println("Next try to connect after 10 seconds.");
+					Thread.sleep(10000);
 				} else if (e.getMessage().equals("Broken pipe")) {
 					System.err.println("Connection to client lost.");
+					System.err.println("Next try to connect after 10 seconds.");
+					Thread.sleep(10000);
 				} else {
 				e.printStackTrace();
 				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
 		}
 	

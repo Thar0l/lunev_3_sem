@@ -16,16 +16,16 @@ public class Task {
 	}
 	
 	public void Split(int partscount) {
-		int partsize = (int) Math.ceil((double)(size)/(double)(partscount));
+		int partsize = (int) Math.ceil((double)(size) / (double)(partscount));
 		Task.Parts = new ArrayList<TaskPart>();
 		int start = 0;
 		int end = size - 1;
-		for (int i = 0; i< partscount; i++) {
+		for (int i = 0; i < partscount; i++) {
 			start = partsize*i;
-			end = partsize*(i+1) - 1;
-			if ((end >= size)||(i == partscount-1))
+			end = partsize * (i + 1) - 1;
+			if ((end >= size)||(i == partscount - 1))
 				end = size - 1;
-			System.out.println("Part "+i+" ~ ["+start+" - "+end+"]");
+			System.out.println("Task {" + i + "} = minors [" + start + " - " + end + "]");
 			Parts.add(new TaskPart(start, end));
 		}
 	}
@@ -47,7 +47,7 @@ public class Task {
 	}
 	
 	public void calcResult() {
-		for (int i = 0; i< Parts.size(); i++)
+		for (int i = 0; i < Parts.size(); i++)
 			Task.result = Task.result + Task.Parts.get(i).getResult();
 	}
 
